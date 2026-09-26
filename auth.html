@@ -80,6 +80,8 @@
       const code = params.get('code');
       const flow = params.get('flow') === 'recovery' ? 'recovery' : 'signup';
       const error = params.get('error_description') || hash.get('error_description');
+      // В адресе могут быть одноразовые ключи — убираем их из истории браузера
+      history.replaceState(null, '', location.pathname);
       const title = document.getElementById('title');
       const text = document.getElementById('text');
       const open = document.getElementById('open');
