@@ -3,7 +3,8 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Pulse — подтверждение</title>
+    <meta name="robots" content="noindex" />
+    <title>Pulse</title>
     <link rel="icon" href="assets/pulse-logo.png" />
     <style>
       :root {
@@ -18,88 +19,235 @@
         display: grid;
         place-items: center;
         padding: 24px 16px;
-        background: radial-gradient(90% 70% at 50% 0%, #26213a 0%, #111113 60%);
+        background: #0e0e10;
         color: #ededf0;
-        font: 16px/1.5 system-ui, 'Segoe UI', sans-serif;
+        font: 16px/1.55 'Segoe UI', system-ui, sans-serif;
       }
       main {
-        width: min(440px, 100%);
+        width: min(400px, 100%);
         text-align: center;
+        animation: rise 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both;
       }
-      img {
-        width: 76px;
-        height: 76px;
-        border-radius: 20px;
-        box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+      .badge {
+        position: relative;
+        width: 72px;
+        height: 72px;
+        margin: 0 auto;
+      }
+      .badge img {
+        width: 72px;
+        height: 72px;
+        border-radius: 18px;
+        display: block;
+      }
+      .badge .state {
+        position: absolute;
+        right: -6px;
+        bottom: -6px;
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        border: 3px solid #0e0e10;
+        display: grid;
+        place-items: center;
+        background: #2b2b31;
+      }
+      .spinner {
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        border: 2px solid #6b6b75;
+        border-top-color: #f4f4f6;
+        animation: spin 0.8s linear infinite;
+      }
+      .state.ok {
+        background: #3ecf8e;
+      }
+      .state.bad {
+        background: #ff6b6f;
+      }
+      .state svg {
+        width: 14px;
+        height: 14px;
+        stroke: #0e0e10;
+        stroke-width: 3.2;
+        fill: none;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      .state.ok path {
+        stroke-dasharray: 20;
+        stroke-dashoffset: 20;
+        animation: draw 0.4s 0.1s ease-out forwards;
       }
       h1 {
-        margin: 22px 0 8px;
-        font-size: 28px;
-        letter-spacing: -0.02em;
+        margin: 26px 0 8px;
+        font-size: 24px;
+        line-height: 1.25;
+        letter-spacing: -0.015em;
       }
       p {
-        margin: 0 0 22px;
+        margin: 0;
         color: #a3a3ad;
+      }
+      .actions {
+        margin-top: 26px;
       }
       a.button {
         display: inline-block;
-        padding: 12px 26px;
+        padding: 11px 24px;
         border-radius: 999px;
         background: #f4f4f6;
-        color: #111;
-        font-weight: 700;
+        color: #0e0e10;
+        font-weight: 650;
+        font-size: 15px;
         text-decoration: none;
+        transition: transform 0.15s;
+      }
+      a.button:hover {
+        transform: scale(1.03);
       }
       a.button:focus-visible {
-        outline: 2px solid #b99bff;
+        outline: 2px solid #f4f4f6;
         outline-offset: 3px;
       }
-      .error {
-        color: #ff9a9d;
-      }
-      small {
-        display: block;
-        margin-top: 18px;
+      .hint {
+        margin-top: 22px;
+        padding: 12px 14px;
+        border-radius: 12px;
+        background: #1a1a1e;
         color: #9a9aa5;
+        font-size: 13.5px;
+        text-align: left;
+      }
+      [hidden] {
+        display: none !important;
+      }
+      @keyframes rise {
+        from {
+          opacity: 0;
+          transform: translateY(8px);
+        }
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      @keyframes draw {
+        to {
+          stroke-dashoffset: 0;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        main,
+        .spinner,
+        .state.ok path {
+          animation: none;
+          stroke-dashoffset: 0;
+        }
       }
     </style>
   </head>
   <body>
     <main>
-      <img src="assets/pulse-logo.png" alt="Pulse" />
-      <h1 id="title">Возвращаемся в Pulse…</h1>
-      <p id="text">Сейчас откроется Pulse. Если этого не произошло — нажмите кнопку.</p>
-      <a class="button" id="open" href="pulse://">Открыть Pulse</a>
-      <small>Эту вкладку можно закрыть.</small>
+      <div class="badge">
+        <img src="assets/pulse-logo.png" alt="Pulse" />
+        <div class="state" id="state"><div class="spinner"></div></div>
+      </div>
+      <h1 id="title">Открываем Pulse…</h1>
+      <p id="text">Секунду — возвращаем вас в приложение.</p>
+      <div class="actions" id="actions" hidden><a class="button" id="open" href="pulse://">Открыть Pulse</a></div>
+      <p class="hint" id="hint" hidden>
+        Браузер спросит, можно ли открыть Pulse, — нажмите «Открыть». Поставьте галочку «Всегда разрешать», и в следующий раз
+        всё пройдёт без вопросов.
+      </p>
     </main>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"></script>
     <script>
-      // Supabase возвращает сюда после ссылки из письма: ?code=... (или #error=...).
-      // Передаём код в приложение по ссылке pulse://auth — дальше вход происходит в самом Pulse.
+      // Supabase возвращает сюда после ссылки из письма: ?code=... (или ошибку).
+      // Передаём код в Pulse по ссылке pulse://auth, а когда Pulse сообщит, что получил её, закрываем вкладку.
+      const SUPABASE_URL = 'https://nbwyliijjegumoouzdhh.supabase.co';
+      const SUPABASE_KEY = 'sb_publishable_ccfxCIBfyKt712zPIi9CYw_yFnbCk2C';
+
       const params = new URLSearchParams(location.search);
       const hash = new URLSearchParams(location.hash.slice(1));
       const code = params.get('code');
       const flow = params.get('flow') === 'recovery' ? 'recovery' : 'signup';
       const error = params.get('error_description') || hash.get('error_description');
-      // В адресе могут быть одноразовые ключи — убираем их из истории браузера
+      // В адресе одноразовые ключи — убираем их из истории браузера
       history.replaceState(null, '', location.pathname);
-      const title = document.getElementById('title');
-      const text = document.getElementById('text');
-      const open = document.getElementById('open');
+
+      const $ = (id) => document.getElementById(id);
+      const CHECK = '<svg viewBox="0 0 16 16"><path d="M3.5 8.5l3 3 6-7"/></svg>';
+      const CROSS = '<svg viewBox="0 0 16 16"><path d="M4.5 4.5l7 7m0-7l-7 7"/></svg>';
+
+      function show(state, title, text) {
+        $('state').className = 'state ' + state;
+        $('state').innerHTML = state === 'ok' ? CHECK : state === 'bad' ? CROSS : '<div class="spinner"></div>';
+        $('title').textContent = title;
+        $('text').textContent = text;
+      }
+
+      async function channelName(value) {
+        const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value));
+        return 'pulse-auth-' + [...new Uint8Array(digest)].slice(0, 12).map((b) => b.toString(16).padStart(2, '0')).join('');
+      }
+
+      // Подписываемся на сигнал от Pulse до того, как открыть приложение, чтобы его не пропустить
+      async function listenForPulse(onDone) {
+        if (!window.supabase) return;
+        const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+          auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+        });
+        const channel = client.channel(await channelName(code), { config: { broadcast: { self: false } } });
+        channel.on('broadcast', { event: 'done' }, onDone);
+        await new Promise((resolve) => {
+          const timer = setTimeout(resolve, 2500);
+          channel.subscribe((status) => {
+            if (status === 'SUBSCRIBED') {
+              clearTimeout(timer);
+              resolve();
+            }
+          });
+        });
+      }
+
+      function finish() {
+        show(
+          'ok',
+          flow === 'recovery' ? 'Готово — задайте пароль в Pulse' : 'Готово — вы вошли в Pulse',
+          'Эту вкладку можно закрыть.'
+        );
+        $('actions').hidden = true;
+        $('hint').hidden = true;
+        setTimeout(() => window.close(), 900);
+      }
+
       if (error) {
-        title.textContent = 'Ссылка не сработала';
-        text.textContent = /expired|invalid/i.test(error)
-          ? 'Ссылка устарела или уже использована. Запросите новое письмо в Pulse.'
-          : error;
-        text.className = 'error';
+        show(
+          'bad',
+          'Ссылка не сработала',
+          /expired|invalid/i.test(error) ? 'Она устарела или уже использована. Запросите новое письмо в Pulse.' : error
+        );
+        $('actions').hidden = false;
       } else if (code) {
-        title.textContent = flow === 'recovery' ? 'Смена пароля' : 'Почта подтверждена';
-        text.textContent = flow === 'recovery' ? 'Возвращаемся в Pulse, чтобы задать новый пароль.' : 'Возвращаемся в Pulse — вы войдёте автоматически.';
         const link = 'pulse://auth?' + new URLSearchParams({ code, flow });
-        open.href = link;
-        location.href = link;
+        $('open').href = link;
+        listenForPulse(finish)
+          .catch(() => {})
+          .then(() => {
+            location.href = link;
+            // Если Pulse не открылся сам (браузер спросил разрешение или приложение не установлено) — даём кнопку
+            setTimeout(() => {
+              if ($('state').classList.contains('ok')) return;
+              $('actions').hidden = false;
+              $('hint').hidden = false;
+            }, 2500);
+          });
       } else {
-        title.textContent = 'Почта подтверждена';
-        text.textContent = 'Вернитесь в Pulse и войдите с почтой и паролем.';
+        show('ok', 'Почта подтверждена', 'Вернитесь в Pulse — он войдёт в аккаунт сам.');
+        $('actions').hidden = false;
       }
     </script>
   </body>
